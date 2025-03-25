@@ -2,10 +2,15 @@ package app
 
 import (
 	grpcapp "SSO/internal/app/grpc"
+	"SSO/internal/config"
 	"SSO/internal/services/auth"
+	"SSO/internal/storage"
+	"SSO/internal/storage/postgres"
 	"SSO/internal/storage/sqlite"
+	dbPostgres "SSO/pkg/db/postgres"
+	dbSqlite "SSO/pkg/db/sqlite"
+	"fmt"
 	"log/slog"
-	"time"
 )
 
 type App struct {
@@ -14,18 +19,27 @@ type App struct {
 
 func New(
 	log *slog.Logger,
-	grpcPort int,
-	storagePath string,
-	tokenTTL time.Duration,
+	cfg *config.Config,
 ) *App {
-	storage, err := sqlite.New(storagePath, log)
+	var s storage.Storage
+	var err error
+
+	switch cfg.AppParams.DBSM {
+	case "sqlite":
+		s, err = sqlite.New(dbSqlite.GetDBConn(), log)
+	case "postgres":
+		s, err = postgres.New(dbPostgres.GetDBConn(), log)
+	default:
+		panic(fmt.Sprintf("unsupported database: %s", cfg.AppParams.DBSM))
+	}
+
 	if err != nil {
 		panic(err)
 	}
 
-	authService := auth.New(log, storage, storage, storage, tokenTTL)
+	authService := auth.New(log, s, s, s, cfg.AuthParams)
 
-	grpcApp := grpcapp.New(log, authService, grpcPort)
+	grpcApp := grpcapp.New(log, authService, cfg.GRPC.Port)
 
 	return &App{
 		GRPCServer: grpcApp,

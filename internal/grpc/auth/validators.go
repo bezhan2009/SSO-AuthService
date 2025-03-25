@@ -11,8 +11,8 @@ const (
 )
 
 func validateLogin(req *ssov1.LoginRequest) error {
-	if req.GetEmail() == "" {
-		return status.Error(codes.InvalidArgument, "email is required")
+	if req.GetUsername() == "" {
+		return status.Error(codes.InvalidArgument, "username is required")
 	}
 
 	if req.GetPassword() == "" {

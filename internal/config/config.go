@@ -8,10 +8,41 @@ import (
 )
 
 type Config struct {
-	Env         string        `yaml:"env" env_default:"local"`
-	StoragePath string        `yaml:"storage_path" env_required:"true"`
-	TokenTTL    time.Duration `yaml:"token_ttl" env_default:"1h"`
-	GRPC        GRPCConfig    `yaml:"grpc"`
+	AppParams      AppParams      `yaml:"app_params"`
+	SqliteParams   SqliteParams   `yaml:"sqlite_params" env_required:"true"`
+	PostgresParams PostgresParams `yaml:"postgres_params" env_required:"true"`
+	RedisParams    RedisParams    `yaml:"redis_params" env_required:"true"`
+	AuthParams     AuthParams     `yaml:"auth_params" env_required:"true"`
+	GRPC           GRPCConfig     `yaml:"grpc"`
+}
+
+type AppParams struct {
+	Env  string `yaml:"env" env_default:"local"`
+	DBSM string `yaml:"dbsm" env_default:"postgres"`
+}
+
+type PostgresParams struct {
+	User     string `yaml:"user"`
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Database string `yaml:"database"`
+	SSLMode  string `yaml:"sslmode"`
+}
+
+type RedisParams struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Password string `yaml:"password"`
+	DB       int    `yaml:"db"`
+}
+
+type SqliteParams struct {
+	StoragePath string `yaml:"storage_path"`
+}
+
+type AuthParams struct {
+	JwtTTLMinutes      time.Duration `yaml:"jwt_ttl_minutes"`
+	JwtTTLRefreshHours time.Duration `yaml:"jwt_ttl_refresh_hours"`
 }
 
 type GRPCConfig struct {

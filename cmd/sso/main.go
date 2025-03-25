@@ -4,32 +4,19 @@ import (
 	"SSO/internal/app"
 	"SSO/internal/config"
 	"SSO/internal/lib/logger"
+	"SSO/pkg/db"
+	"SSO/pkg/db/redis"
 	"errors"
 	"fmt"
 	"github.com/joho/godotenv"
 	"log/slog"
 	"os"
-	"os/exec"
 	"os/signal"
-	"strings"
 	"syscall"
 )
 
 func main() {
-	// Создаем команду ls
-	cmd := exec.Command("ls")
-
-	// Получаем стандартный вывод команды
-	output, err := cmd.Output()
-	if err != nil {
-		fmt.Println("Ошибка:", err)
-		return
-	}
-
-	// Преобразуем байтовый срез в строку и выводим на консоль
-	fmt.Println(strings.TrimSpace(string(output)))
-
-	err = godotenv.Load(".env") // Два уровня вверх от ./cmd/sso
+	err := godotenv.Load(".env") // Два уровня вверх от ./cmd/sso
 	if err != nil {
 		err = godotenv.Load("example.env")
 		if err != nil {
@@ -39,11 +26,21 @@ func main() {
 
 	cfg := config.MustLoad()
 
-	log := logger.SetupLogger(cfg.Env)
+	log := logger.SetupLogger(cfg.AppParams.Env)
 
 	log.Info("Starting application")
 
-	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL)
+	err = db.ConnectToDB(cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	err = redis.InitializeRedis(cfg.RedisParams)
+	if err != nil {
+		panic(err)
+	}
+
+	application := app.New(log, cfg)
 
 	go application.GRPCServer.MustStart()
 
@@ -52,7 +49,12 @@ func main() {
 
 	sing := <-stop
 
-	log.Info("stopping application: ", slog.String("signal", sing.String()))
+	log.Info("Stopping application: ", slog.String("signal", sing.String()))
+
+	err = db.CloseDB(cfg.AppParams.DBSM)
+	if err != nil {
+		log.Error("Failed to close DB connection", slog.String("error", err.Error()))
+	}
 
 	application.GRPCServer.Stop()
 	log.Info("Application stopped successfully")

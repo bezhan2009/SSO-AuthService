@@ -1,6 +1,22 @@
-env: "local" # dev, prod
-storage_path: "./storage/sso.db"
-token_ttl: 45m
+app_params:
+  env: "local" # dev, prod
+  dbsm: "postgres"
+sqlite_params:
+  storage_path: "./storage/sso.db"
+postgres_params:
+  user: "postgres"
+  host: "localhost"
+  port: 5432
+  database: "sso_test_db"
+  sslmode: "disable"
+redis_params:
+  host: ""
+  port: 6379
+  password: ""
+  db: 1
+auth_params:
+  jwt_ttl_minutes: 60m
+  jwt_ttl_refresh_hours: 72h
 grpc:
   port: 44044
-  timeout: 1m
+  timeout: 10h

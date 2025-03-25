@@ -10,7 +10,6 @@ RUN go mod download
 COPY . .
 
 RUN go env -w CGO_ENABLED=1
-RUN go run ./cmd/migrate/main.go --storage-path=./storage/sso.db --migrations-path=./migrations
 RUN go build -o grpc_server ./cmd/sso/main.go
 
 # Второй этап (создание финального контейнера)
@@ -24,8 +23,7 @@ RUN mkdir config
 RUN mkdir storage
 
 # Копируем конфиги
-COPY --from=builder ./app/config/local.yaml ./config
-COPY --from=builder ./app/config/local_test.yaml ./config
+COPY --from=builder ./app/config/docker/local.yaml ./config
 
 # Копируем БД
 COPY --from=builder ./app/storage/sso.db ./storage

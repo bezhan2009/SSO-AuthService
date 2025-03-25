@@ -1,4 +1,4 @@
-package sqlite
+package postgres
 
 import (
 	"SSO/internal/domain/models"
@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	ssov1 "github.com/bezhan2009/AuthProtos/gen/go/sso"
-	"github.com/mattn/go-sqlite3"
+	"github.com/jackc/pgx/v5/pgconn"
 	"log/slog"
 
 	"gorm.io/gorm"
@@ -18,13 +18,13 @@ type Storage struct {
 	log *slog.Logger
 }
 
-// New создает новый экземпляр хранилища с SQLite.
+// New создает новый экземпляр хранилища с PostgreSQL.
 func New(db *gorm.DB, log *slog.Logger) (*Storage, error) {
-	const op = "storage.sqlite.New"
+	const op = "storage.postgres.New"
 
 	// Автоматическая миграция моделей
 	if err := db.AutoMigrate(&models.User{}, &models.App{}, &models.Admin{}); err != nil {
-		log.Error(fmt.Sprintf("op: %s: Error migrating database", op), slog.String("error", err.Error()))
+		log.Error(fmt.Sprintf("Error migrating database: %s", err), slog.String("error", err.Error()))
 		return nil, err
 	}
 
@@ -32,7 +32,7 @@ func New(db *gorm.DB, log *slog.Logger) (*Storage, error) {
 }
 
 func (s *Storage) SaveUser(ctx context.Context, userRequest *ssov1.RegisterRequest) (int64, error) {
-	const op = "storage.sqlite.SaveUser"
+	const op = "storage.postgres.SaveUser"
 
 	user := models.User{
 		FirstName:    userRequest.GetFirstName(),
@@ -44,13 +44,12 @@ func (s *Storage) SaveUser(ctx context.Context, userRequest *ssov1.RegisterReque
 	result := s.db.WithContext(ctx).Create(&user)
 
 	if result.Error != nil {
-		// Проверяем, является ли ошибка sqlite3.Error и содержит ли она код UNIQUE_CONSTRAINT
-		var sqliteErr sqlite3.Error
-		if errors.As(result.Error, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+		// Проверяем, является ли ошибка ошибкой уникального ограничения
+		var pgErr *pgconn.PgError
+		if errors.As(result.Error, &pgErr) && pgErr.Code == "23505" {
 			s.log.Warn("User already exists", slog.String("err", result.Error.Error()))
 			return 0, fmt.Errorf("%s: %w", op, storage.ErrUserExists)
 		}
-
 		s.log.Error("Error inserting user", slog.String("err", result.Error.Error()))
 		return 0, fmt.Errorf("%s: %w", op, result.Error)
 	}
@@ -59,7 +58,7 @@ func (s *Storage) SaveUser(ctx context.Context, userRequest *ssov1.RegisterReque
 }
 
 func (s *Storage) User(ctx context.Context, username string) (models.User, error) {
-	const op = "storage.sqlite.User"
+	const op = "storage.postgres.User"
 
 	var user models.User
 	result := s.db.WithContext(ctx).Where("email = ? OR username = ?", username, username).First(&user)
@@ -69,7 +68,6 @@ func (s *Storage) User(ctx context.Context, username string) (models.User, error
 			s.log.Warn("User not found", slog.String("username", username))
 			return models.User{}, storage.ErrUserNotFound
 		}
-
 		s.log.Error("Error fetching user", slog.String("err", result.Error.Error()))
 		return models.User{}, fmt.Errorf("%s: %w", op, result.Error)
 	}
@@ -78,7 +76,7 @@ func (s *Storage) User(ctx context.Context, username string) (models.User, error
 }
 
 func (s *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
-	const op = "storage.sqlite.IsAdmin"
+	const op = "storage.postgres.IsAdmin"
 
 	var admin models.Admin
 	result := s.db.WithContext(ctx).Select("id").Where("user_id = ?", userID).First(&admin)
@@ -95,7 +93,7 @@ func (s *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 }
 
 func (s *Storage) App(ctx context.Context, appID int64) (models.App, error) {
-	const op = "storage.sqlite.App"
+	const op = "storage.postgres.App"
 
 	var app models.App
 	result := s.db.WithContext(ctx).Where("id = ?", appID).First(&app)
@@ -104,9 +102,14 @@ func (s *Storage) App(ctx context.Context, appID int64) (models.App, error) {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return models.App{}, storage.ErrAppNotFound
 		}
+
 		s.log.Error("Error fetching app", slog.String("err", result.Error.Error()))
 		return models.App{}, fmt.Errorf("%s: %w", op, result.Error)
 	}
 
 	return app, nil
+}
+
+func (s *Storage) Apps() {
+
 }
