@@ -6,6 +6,7 @@ import (
 	"SSO/internal/lib/logger/sl"
 	"SSO/internal/services/auth/validators"
 	"SSO/internal/storage"
+	kafkaProducer "SSO/pkg/brokers/kafka"
 	"context"
 	"errors"
 	"fmt"
@@ -101,7 +102,7 @@ func (a *Auth) RegisterNewUser(ctx context.Context,
 
 	user.Password = string(passHash)
 
-	uid, err := a.usrSaver.SaveUser(ctx, user)
+	userDB, err := a.usrSaver.SaveUser(ctx, user)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserExists) {
 			a.log.Warn("User already exists")
@@ -114,9 +115,16 @@ func (a *Auth) RegisterNewUser(ctx context.Context,
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
+	err = kafkaProducer.SendMessage(userDB)
+	if err != nil {
+		log.Error("Failed to send message", slog.String("error", err.Error()))
+
+		return 0, err
+	}
+
 	log.Info("User Registered")
 
-	return uid, nil
+	return int64(userDB.ID), nil
 }
 
 func (a *Auth) IsAdmin(ctx context.Context,

@@ -31,7 +31,7 @@ func New(db *gorm.DB, log *slog.Logger) (*Storage, error) {
 	return &Storage{db: db, log: log}, nil
 }
 
-func (s *Storage) SaveUser(ctx context.Context, userRequest *ssov1.RegisterRequest) (int64, error) {
+func (s *Storage) SaveUser(ctx context.Context, userRequest *ssov1.RegisterRequest) (models.User, error) {
 	const op = "storage.sqlite.SaveUser"
 
 	user := models.User{
@@ -48,14 +48,14 @@ func (s *Storage) SaveUser(ctx context.Context, userRequest *ssov1.RegisterReque
 		var sqliteErr sqlite3.Error
 		if errors.As(result.Error, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
 			s.log.Warn("User already exists", slog.String("err", result.Error.Error()))
-			return 0, fmt.Errorf("%s: %w", op, storage.ErrUserExists)
+			return models.User{}, fmt.Errorf("%s: %w", op, storage.ErrUserExists)
 		}
 
 		s.log.Error("Error inserting user", slog.String("err", result.Error.Error()))
-		return 0, fmt.Errorf("%s: %w", op, result.Error)
+		return models.User{}, fmt.Errorf("%s: %w", op, result.Error)
 	}
 
-	return int64(user.ID), nil
+	return user, nil
 }
 
 func (s *Storage) User(ctx context.Context, username string) (models.User, error) {

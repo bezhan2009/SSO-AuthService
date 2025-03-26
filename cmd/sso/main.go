@@ -4,6 +4,7 @@ import (
 	"SSO/internal/app"
 	"SSO/internal/config"
 	"SSO/internal/lib/logger"
+	kafkaProducer "SSO/pkg/brokers/kafka"
 	"SSO/pkg/db"
 	"SSO/pkg/db/redis"
 	"errors"
@@ -36,6 +37,11 @@ func main() {
 	}
 
 	err = redis.InitializeRedis(cfg.RedisParams)
+	if err != nil {
+		panic(err)
+	}
+
+	err = kafkaProducer.CreateProducer(cfg.KafkaParams)
 	if err != nil {
 		panic(err)
 	}

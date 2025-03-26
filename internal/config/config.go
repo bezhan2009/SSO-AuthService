@@ -12,6 +12,7 @@ type Config struct {
 	SqliteParams   SqliteParams   `yaml:"sqlite_params" env_required:"true"`
 	PostgresParams PostgresParams `yaml:"postgres_params" env_required:"true"`
 	RedisParams    RedisParams    `yaml:"redis_params" env_required:"true"`
+	KafkaParams    KafkaParams    `yaml:"kafka_params" env_required:"true"`
 	AuthParams     AuthParams     `yaml:"auth_params" env_required:"true"`
 	GRPC           GRPCConfig     `yaml:"grpc"`
 }
@@ -34,6 +35,12 @@ type RedisParams struct {
 	Port     int    `yaml:"port"`
 	Password string `yaml:"password"`
 	DB       int    `yaml:"db"`
+}
+
+type KafkaParams struct {
+	Host  string `yaml:"host"`
+	Port  int    `yaml:"port"`
+	Topic string `yaml:"topic"`
 }
 
 type SqliteParams struct {

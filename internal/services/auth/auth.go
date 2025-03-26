@@ -25,7 +25,7 @@ type Auth struct {
 
 type UserSaver interface {
 	SaveUser(ctx context.Context,
-		userRequest *ssov1.RegisterRequest) (uid int64, err error)
+		userRequest *ssov1.RegisterRequest) (user models.User, err error)
 }
 
 type UserProvider interface {

@@ -8,7 +8,7 @@ import (
 )
 
 type Storage interface {
-	SaveUser(ctx context.Context, userRequest *ssov1.RegisterRequest) (int64, error)
+	SaveUser(ctx context.Context, userRequest *ssov1.RegisterRequest) (models.User, error)
 	User(ctx context.Context, username string) (models.User, error)
 	IsAdmin(ctx context.Context, userID int64) (bool, error)
 	App(ctx context.Context, appID int64) (models.App, error)
