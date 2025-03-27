@@ -4,6 +4,7 @@ import (
 	grpcapp "SSO/internal/app/grpc"
 	"SSO/internal/config"
 	"SSO/internal/services/auth"
+	"SSO/internal/services/ping"
 	"SSO/internal/storage"
 	"SSO/internal/storage/postgres"
 	"SSO/internal/storage/sqlite"
@@ -38,8 +39,9 @@ func New(
 	}
 
 	authService := auth.New(log, s, s, s, cfg.AuthParams)
+	pingService := ping.New(log)
 
-	grpcApp := grpcapp.New(log, authService, cfg.GRPC.Port)
+	grpcApp := grpcapp.New(log, authService, pingService, cfg.GRPC.Port)
 
 	return &App{
 		GRPCServer: grpcApp,

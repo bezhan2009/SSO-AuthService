@@ -18,6 +18,8 @@ kafka_params:
   host: "localhost"
   port: 9092
   topic: "users_topic"
+  group_id: "users-processor-sso-unique"
+  auto_offset_reset: "earliest"
 auth_params:
   jwt_ttl_minutes: 60m
   jwt_ttl_refresh_hours: 72h

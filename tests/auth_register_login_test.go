@@ -6,8 +6,10 @@ import (
 	"fmt"
 	ssov1 "github.com/bezhan2009/AuthProtos/gen/go/sso"
 	"github.com/brianvoe/gofakeit/v6"
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"os"
 	"testing"
 )
 
@@ -20,6 +22,11 @@ const (
 )
 
 func TestRegisterLogin_Login_HappyPath(t *testing.T) {
+	err := godotenv.Load("test.env") // Два уровня вверх от ./cmd/sso
+	if err != nil {
+		panic(err)
+	}
+
 	ctx, st := suite.New(t)
 
 	firstName := gofakeit.Name()
@@ -52,7 +59,8 @@ func TestRegisterLogin_Login_HappyPath(t *testing.T) {
 	token := respLogin.GetAccessToken()
 	assert.NotEmpty(t, token)
 
-	tokenClaims, err := utils.ParseToken(token, appSecret)
+	fmt.Println(os.Getenv("JWT_SECRET_KEY"))
+	tokenClaims, err := utils.ParseToken(token, os.Getenv("JWT_SECRET_KEY"))
 
 	require.NoError(t, err)
 

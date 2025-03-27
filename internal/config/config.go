@@ -38,9 +38,11 @@ type RedisParams struct {
 }
 
 type KafkaParams struct {
-	Host  string `yaml:"host"`
-	Port  int    `yaml:"port"`
-	Topic string `yaml:"topic"`
+	Host            string `yaml:"host"`
+	Port            int    `yaml:"port"`
+	Topic           string `yaml:"topic"`
+	GroupID         string `yaml:"group_id"`
+	AutoOffsetReset string `yaml:"auto_offset_reset"`
 }
 
 type SqliteParams struct {

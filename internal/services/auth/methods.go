@@ -3,15 +3,14 @@ package auth
 import (
 	"SSO/internal/domain/models"
 	jwtauth "SSO/internal/lib/jwt"
-	"SSO/internal/lib/logger/sl"
 	"SSO/internal/services/auth/validators"
 	"SSO/internal/storage"
 	kafkaProducer "SSO/pkg/brokers/kafka"
+	"SSO/pkg/utils"
 	"context"
 	"errors"
 	"fmt"
 	ssov1 "github.com/bezhan2009/AuthProtos/gen/go/sso"
-	"golang.org/x/crypto/bcrypt"
 	"log/slog"
 )
 
@@ -44,10 +43,10 @@ func (a *Auth) Login(ctx context.Context,
 		return tokenResponse, fmt.Errorf("%s: %w", op, err)
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.HashPassword), []byte(userLogin.GetPassword())); err != nil {
-		a.log.Warn("Invalid credentials", sl.Err(err))
+	if utils.GenerateHash(userLogin.GetPassword()) != user.HashPassword {
+		log.Warn("Password mismatch")
 
-		return tokenResponse, ErrInvalidCredentials
+		return tokenResponse, fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 	}
 
 	app, err := a.appProvider.App(ctx, int64(userLogin.GetAppLogin()))
@@ -94,13 +93,8 @@ func (a *Auth) RegisterNewUser(ctx context.Context,
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
-	passHash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	if err != nil {
-		log.Error("Failed to GenerateFromPassword", err)
-		return 0, fmt.Errorf("%s: %w", op, err)
-	}
-
-	user.Password = string(passHash)
+	passHash := utils.GenerateHash(user.GetPassword())
+	user.Password = passHash
 
 	userDB, err := a.usrSaver.SaveUser(ctx, user)
 	if err != nil {

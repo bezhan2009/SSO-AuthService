@@ -1,6 +1,6 @@
-FROM golang:1.23.6-alpine AS builder
+FROM golang:1.23.6 AS builder
 
-RUN apk add --no-cache gcc musl-dev
+RUN apt-get update && apt-get install -y gcc musl-dev && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ RUN go env -w CGO_ENABLED=1
 RUN go build -o grpc_server ./cmd/sso/main.go
 
 # Второй этап (создание финального контейнера)
-FROM alpine:latest
+FROM ubuntu:latest
 WORKDIR /root/
 
 # Создаем директорю для конфигов

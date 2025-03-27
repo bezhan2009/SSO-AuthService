@@ -5,6 +5,7 @@ import (
 	"SSO/pkg/errs"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"os"
 	"time"
 )
 
@@ -33,7 +34,7 @@ func GenerateToken(userID uint,
 		},
 	}
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	accessTokenString, err := accessToken.SignedString([]byte(app.Secret))
+	accessTokenString, err := accessToken.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
 		return "", "", err
 	}
@@ -50,7 +51,7 @@ func GenerateToken(userID uint,
 	}
 
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshTokenString, err := refreshToken.SignedString([]byte(app.Secret))
+	refreshTokenString, err := refreshToken.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
 		return "", "", err
 	}

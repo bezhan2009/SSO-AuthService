@@ -8,9 +8,8 @@ import (
 	"fmt"
 	ssov1 "github.com/bezhan2009/AuthProtos/gen/go/sso"
 	"github.com/jackc/pgx/v5/pgconn"
-	"log/slog"
-
 	"gorm.io/gorm"
+	"log/slog"
 )
 
 type Storage struct {
@@ -24,8 +23,15 @@ func New(db *gorm.DB, log *slog.Logger) (*Storage, error) {
 
 	// Автоматическая миграция моделей
 	if err := db.AutoMigrate(&models.User{}, &models.App{}, &models.Admin{}); err != nil {
-		log.Error(fmt.Sprintf("Error migrating database: %s", err), slog.String("error", err.Error()))
+		log.Error(fmt.Sprintf("Error migrating database: %s", err), slog.String("op", op), slog.String("error", err.Error()))
 		return nil, err
+	}
+
+	if db.Where("id = 1").First(&models.App{}).Error != nil {
+		db.Create(&models.App{
+			Name:   "BizMart_service",
+			Secret: "No secret in DB",
+		})
 	}
 
 	return &Storage{db: db, log: log}, nil

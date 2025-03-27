@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	authgrpc "SSO/internal/grpc/auth"
+	pinggrpc "SSO/internal/grpc/ping"
 )
 
 type App struct {
@@ -16,10 +17,11 @@ type App struct {
 	port       int
 }
 
-func New(log *slog.Logger, authService authgrpc.Auth, port int) *App {
+func New(log *slog.Logger, authService authgrpc.Auth, pingService pinggrpc.PingAPI, port int) *App {
 	grpcServer := grpc.NewServer()
 
 	authgrpc.Register(grpcServer, authService)
+	pinggrpc.Register(grpcServer, pingService)
 
 	return &App{
 		log,

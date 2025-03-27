@@ -28,6 +28,13 @@ func New(db *gorm.DB, log *slog.Logger) (*Storage, error) {
 		return nil, err
 	}
 
+	if db.Where("id = 1").First(&models.App{}).Error != nil {
+		db.Create(&models.App{
+			Name:   "BizMart_service",
+			Secret: "No secret in DB",
+		})
+	}
+
 	return &Storage{db: db, log: log}, nil
 }
 
